@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/ericboxer/Kindling-Node/issues"
   },
-  "homepage": "https://github.com/ericboxer/Kindling-Node#readme"
+  "homepage": "https://github.com/ericboxer/Kindling-Node#readme",
+  "dependencies": {
+    "dateformat": "^3.0.3"
+  }
 }
