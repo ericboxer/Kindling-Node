@@ -4,10 +4,9 @@ const EventEmitter = require('events')
 const fs = require('fs')
 const path = require('path')
 
-
 // .:: In the event of electron ::.
 
-// Electron will be required when needed... however we need to set some gloabal vairables for it to get used correctly. 
+// Electron will be required when needed... however we need to set some gloabal vairables for it to get used correctly.
 var ipcRenderer //= require('electron')
 var remote // = reuqire('electron')
 
@@ -35,9 +34,6 @@ class Logger extends EventEmitter {
     this.dateFormat = options.dateFormat || 'yyyy-mm-dd HH:MM:ss.l' // You can find formatting options here https://www.npmjs.com/package/dateformat
     this.isElectron = false
     this.selfLog = false
-
-
-
   }
   /**
    *
@@ -59,7 +55,6 @@ class Logger extends EventEmitter {
     this.info(`New logger added:: Name: ${logStream.name}, Log Level: ${this._getKeyByValue(logLevels, logStream.logLevel || this.logLevel).toUpperCase()}, Type: ${logStream.type.toUpperCase()}`)
   }
 
-
   /**
    * 
    * @param {String} logMessage [var x = 1]
@@ -67,8 +62,7 @@ class Logger extends EventEmitter {
   
    */
   log(logMessage, logLevel = 0) {
-
-    /** 
+    /**
      * {name: 'File Logger',
      * type: ['file' | 'console' | 'udp'],
      * filePath: 'path/to/file, * 'file' only
@@ -137,8 +131,6 @@ class Logger extends EventEmitter {
     }
   }
 
-
-
   /**
    * @description
    * @param {*} data
@@ -154,7 +146,7 @@ class Logger extends EventEmitter {
 
   /**
    * Just a warning. This may cause issue in the futre
-   * @param {String} logMessage 
+   * @param {String} logMessage
    */
   warn(logMessage) {
     this.log(logMessage, logLevels.WARN)
@@ -162,7 +154,7 @@ class Logger extends EventEmitter {
 
   /**
    * Log your error messages here
-   * @param {String} logMessage 
+   * @param {String} logMessage
    */
   error(logMessage) {
     this.log(logMessage, logLevels.ERROR)
@@ -170,7 +162,7 @@ class Logger extends EventEmitter {
 
   /**
    * This log will pretty much always show... Think of it as the voiceover of your program
-   * @param {String} logMessage 
+   * @param {String} logMessage
    */
   godly(logMessage) {
     this.log(logMessage, logLevels.GODLY)
@@ -193,8 +185,8 @@ class Logger extends EventEmitter {
   }
 
   /**
-   * 
-   * @param {string} data 
+   *
+   * @param {string} data
    */
   _log(data) {
     if (this.selfLog) {
@@ -216,33 +208,26 @@ class Logger extends EventEmitter {
 
 module.exports = {
   Logger,
-  logLevels
+  logLevels,
 }
-
-
 
 // .:: Local moduling... ::.
 if (typeof require != 'undefined' && require.main == module) {
-
   const bat = new Logger()
-
 
   bat.addLogger({
     name: 'base',
     type: 'console',
-    logLevel: logLevels.INFO
+    logLevel: logLevels.INFO,
   })
-
 
   bat.addLogger({
     name: 'udp logger',
     type: 'udp',
     ipAddress: '127.0.0.1',
     port: 2485,
-    logLevel: logLevels.UNGODLY
-
+    logLevel: logLevels.UNGODLY,
   })
-
 
   // bat.log(String(bat.udpClients))
   // console.log(bat.udpClients)
@@ -253,8 +238,7 @@ if (typeof require != 'undefined' && require.main == module) {
     type: 'udp',
     ipAddress: '127.0.0.1',
     port: 2485,
-    logLevel: logLevels.UNGODLY
-
+    logLevel: logLevels.UNGODLY,
   })
 
   bat.info('fuckerS')
