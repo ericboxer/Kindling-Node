@@ -92,8 +92,6 @@ class Logger extends EventEmitter {
         const logData = `${date} ${this._getKeyByValue(logLevels, Number(logLevel)).toLocaleUpperCase()}:: ${logMessage}`
 
         // Logger specifics
-        // if (activeLogger.hasOwnProperty(''))
-        // console.log(activeLogger)
 
         // Loop through all of the loggers
         switch (activeLogger.type) {
@@ -123,6 +121,10 @@ class Logger extends EventEmitter {
             const bufferedMessage = Buffer.from(logData)
             this.udpClients[activeLogger.name].send(bufferedMessage, activeLogger.port, activeLogger.ipaddress)
             // this.udpClients[activeLogger.name].close()
+            break
+
+          case 'custom':
+            activeLogger.customFunction(logData)
             break
           default:
             console.log(Date.now(), 'Unknown type of logger', activeLogger.logLevel)
