@@ -1,6 +1,6 @@
 {
   "name": "kindling",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A lightweight logging utility based on a common API in multiple alnguages.",
   "main": "index.js",
   "scripts": {
