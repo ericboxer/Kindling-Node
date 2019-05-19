@@ -176,6 +176,9 @@ class Logger extends EventEmitter {
     this.logLevel = logLevel
   }
 
+  /**
+   * This enables ussage in an electron app.
+   */
   useElectron() {
     this.isElectron = true
     ipcRenderer = require('electron').ipcRenderer
@@ -243,5 +246,5 @@ if (typeof require != 'undefined' && require.main == module) {
     logLevel: logLevels.UNGODLY,
   })
 
-  bat.info('fuckerS')
+  bat.info('Testing')
 }
