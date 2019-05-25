@@ -4,11 +4,20 @@ const EventEmitter = require('events')
 const fs = require('fs')
 const path = require('path')
 
-// .:: In the event of electron ::.
+const boxTools = require('boxtoolsjs')
 
+// .:: In the event of electron ::.
 // Electron will be required when needed... however we need to set some gloabal vairables for it to get used correctly.
 var ipcRenderer //= require('electron')
 var remote // = reuqire('electron')
+
+// function nameFromEnumValue(enumGroup, value) {
+//   for (prop in enumGroup) {
+//     if (enumGroup[prop] == value) {
+//       return prop
+//     }
+//   }
+// }
 
 /**
  * The preferred set of levels
@@ -22,6 +31,14 @@ var logLevels = {
   ERROR: 30,
   FAILURE: 50,
   GODLY: 1000,
+}
+
+var logEndpoints = {
+  CONSOLE: 0,
+  FILE: 1,
+  UDP: 2,
+  ELECTRON_CONSOLE: 3,
+  CUSTOM: 99,
 }
 
 class Logger extends EventEmitter {
@@ -40,19 +57,24 @@ class Logger extends EventEmitter {
    * @param {Object} logStream
    * @property {Object} logStream
    * @property {string} logStream.name - The name of the log stream
-   * @property {string} logStream.type  - The type of log stream [console | file]
+   * @property {logEndpoints} logStream.type  - The type of log stream [console | file]
    */
-  addLogger(logStream) {
+  addEndpoint(logStream) {
     this.loggers.push(logStream)
     // TODO: add handling for Network logging here
     switch (logStream.type) {
-      case 'udp':
+      case logEndpoints.UDP:
         this.udpClients[logStream.name] = this._createUdpClient(logStream.ipAddress, logStream.port || 2485, logStream.udpBind || false)
         break
       default:
         break
     }
-    this.info(`New logger added:: Name: ${logStream.name}, Log Level: ${this._getKeyByValue(logLevels, logStream.logLevel || this.logLevel).toUpperCase()}, Type: ${logStream.type.toUpperCase()}`)
+    this.info(
+      `New logger added:: Name: ${logStream.name}, Log Level: ${this._getKeyByValue(logLevels, logStream.logLevel || this.logLevel)}, Type: ${boxTools.nameFromEnumValue(
+        logEndpoints,
+        logStream.type,
+      )}`,
+    )
   }
 
   /**
@@ -94,11 +116,12 @@ class Logger extends EventEmitter {
         // Logger specifics
 
         // Loop through all of the loggers
+        console.log(activeLogger.type)
         switch (activeLogger.type) {
-          case 'console':
+          case logEndpoints.CONSOLE:
             console.log(logData)
             break
-          case 'electron console':
+          case logEndpoints.ELECTRON_CONSOLE:
             // We're savvy enough to know we're using Electron, so lets just enable it
             if (!this.isElectron) {
               this.useElectron()
@@ -106,7 +129,7 @@ class Logger extends EventEmitter {
             ipcRenderer.send(activeLogger.channel || 'log', logData)
             break
 
-          case 'file':
+          case logEndpoints.FILE:
             // File specifics
             const fullFilePath = path.join(activeLogger.filePath, activeLogger.fileName)
             const dataWithNewLines = logData + '\r'
@@ -115,7 +138,7 @@ class Logger extends EventEmitter {
             fs.appendFileSync(fullFilePath, dataWithNewLines)
             break
 
-          case 'udp':
+          case logEndpoints.UDP:
             // console.log('UDP Bitches!')
 
             const bufferedMessage = Buffer.from(logData)
@@ -123,7 +146,7 @@ class Logger extends EventEmitter {
             // this.udpClients[activeLogger.name].close()
             break
 
-          case 'custom':
+          case logEndpoints.CUSTOM:
             activeLogger.customFunction(logData)
             break
           default:
@@ -214,33 +237,22 @@ class Logger extends EventEmitter {
 module.exports = {
   Logger,
   logLevels,
+  logEndpoints,
 }
 
 // .:: Local moduling... ::.
 if (typeof require != 'undefined' && require.main == module) {
   const bat = new Logger()
 
-  bat.addLogger({
+  bat.addEndpoint({
     name: 'base',
-    type: 'console',
+    type: logEndpoints.CONSOLE,
     logLevel: logLevels.INFO,
   })
 
-  bat.addLogger({
+  bat.addEndpoint({
     name: 'udp logger',
-    type: 'udp',
-    ipAddress: '127.0.0.1',
-    port: 2485,
-    logLevel: logLevels.UNGODLY,
-  })
-
-  // bat.log(String(bat.udpClients))
-  // console.log(bat.udpClients)
-  bat.info('holler at me bith')
-
-  bat.addLogger({
-    name: 'udp logger 2',
-    type: 'udp',
+    type: logEndpoints.UDP,
     ipAddress: '127.0.0.1',
     port: 2485,
     logLevel: logLevels.UNGODLY,
