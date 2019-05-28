@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/ericboxer/Kindling-Node#readme",
   "dependencies": {
-    "boxtoolsjs": "0.0.2",
+    "boxtoolsjs": "*",
     "dateformat": "^3.0.3"
   },
   "files": [
