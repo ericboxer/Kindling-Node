@@ -1,7 +1,7 @@
 {
   "name": "kindling-logger",
   "version": "1.1.1",
-  "description": "A lightweight logging utility based on a common API in multiple alnguages.",
+  "description": "A lightweight logging utility based on a common API in multiple languages.",
   "main": "kindling.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -22,7 +22,11 @@
   },
   "homepage": "https://github.com/ericboxer/Kindling-Node#readme",
   "dependencies": {
-    "boxtoolsjs": "0.0.1",
+    "boxtoolsjs": "0.0.2",
     "dateformat": "^3.0.3"
-  }
+  },
+  "files": [
+    "kindling.js"
+  ],
+  "devDependencies": {}
 }

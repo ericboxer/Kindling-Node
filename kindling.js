@@ -3,24 +3,16 @@ const dgram = require('dgram')
 const EventEmitter = require('events')
 const fs = require('fs')
 const path = require('path')
-
 const boxTools = require('boxtoolsjs')
 
 // .:: In the event of electron ::.
-// Electron will be required when needed... however we need to set some gloabal vairables for it to get used correctly.
+// Electron will be required when needed... however we need to set some gloabal variables for it to get used correctly.
 var ipcRenderer //= require('electron')
 var remote // = reuqire('electron')
 
-// function nameFromEnumValue(enumGroup, value) {
-//   for (prop in enumGroup) {
-//     if (enumGroup[prop] == value) {
-//       return prop
-//     }
-//   }
-// }
-
 /**
  * The preferred set of levels
+ * @description An ENUM descriptor of the different log levels
  * @enum {number}
  */
 var logLevels = {
@@ -33,6 +25,10 @@ var logLevels = {
   GODLY: 1000,
 }
 
+/**
+ * @description An ENUM descriptor of the different end points
+ * @enum {number}
+ */
 var logEndpoints = {
   CONSOLE: 0,
   FILE: 1,
@@ -70,7 +66,7 @@ class Logger extends EventEmitter {
         break
     }
     this.info(
-      `New logger added:: Name: ${logStream.name}, Log Level: ${this._getKeyByValue(logLevels, logStream.logLevel || this.logLevel)}, Type: ${boxTools.nameFromEnumValue(
+      `New logger added:: Name: ${logStream.name}, Log Level: ${boxTools.ListTools.getKeyByValue(logLevels, logStream.logLevel || this.logLevel)}, Type: ${boxTools.EnumTools.nameFromEnumValue(
         logEndpoints,
         logStream.type,
       )}`,
@@ -78,45 +74,31 @@ class Logger extends EventEmitter {
   }
 
   /**
-   * 
+   * @description The base logger. You are better off using one of the log levels instead
    * @param {String} logMessage [var x = 1]
    * @param {logLevels} logLevel [logLevels.DEBUG] 
   
    */
-  log(logMessage, logLevel = 0) {
-    /**
-     * {name: 'File Logger',
-     * type: ['file' | 'console' | 'udp'],
-     * filePath: 'path/to/file, * 'file' only
-     * fileName: 'log.txt', * 'file' only
-     * rotating: true, * 'file' only
-     * rotateFreq: ['hourly' | 'daily' | 'monthly'] * 'file' only
-     * ipAddress: ['192.168.0.136', '192.168.0.42'] * udp only. Should be an array.
-     * port: 1234 * 'udp' only
-     * }
-     */
-
-    // loop through all of the log streams
-    for (let i = 0; i < this.loggers.length; i++) {
-      const activeLogger = this.loggers[i]
+  _log(logMessage, logLevel = logLevels.INFO) {
+    this.loggers.forEach((logger) => {
+      const activeLogger = logger
       const shouldLog = logLevel >= activeLogger.logLevel && logLevel >= this.logLevel
 
       // For logging the logger... weird, right?
-      this._log('Active logger:', activeLogger)
-      this._log('Log Level:', this.logLevel)
-      this._log('Local Log Level:', logLevel)
-      this._log('Should log:', shouldLog)
+      this._logLocal('Active logger:', activeLogger)
+      this._logLocal('Log Level:', this.logLevel)
+      this._logLocal('Local Log Level:', logLevel)
+      this._logLocal('Should log:', shouldLog)
 
       if (shouldLog) {
         // Build out the data to log
         const now = new Date()
         const date = dateformat(now, this.dateFormat)
-        const logData = `${date} ${this._getKeyByValue(logLevels, Number(logLevel)).toLocaleUpperCase()}:: ${logMessage}`
+        const logData = `${date} ${boxTools.ListTools.getKeyByValue(logLevels, Number(logLevel)).toLocaleUpperCase()}:: ${logMessage}`
 
         // Logger specifics
 
         // Loop through all of the loggers
-        console.log(activeLogger.type)
         switch (activeLogger.type) {
           case logEndpoints.CONSOLE:
             console.log(logData)
@@ -131,7 +113,7 @@ class Logger extends EventEmitter {
 
           case logEndpoints.FILE:
             // File specifics
-            const fullFilePath = path.join(activeLogger.filePath, activeLogger.fileName)
+            const fullFilePath = path.join(activeLogger.filePath, activeLogger.fileName) || path.join('./', 'log.txt')
             const dataWithNewLines = logData + '\r'
 
             // NOW we can do all of the logging
@@ -153,49 +135,70 @@ class Logger extends EventEmitter {
             console.log(Date.now(), 'Unknown type of logger', activeLogger.logLevel)
         }
       }
-    }
+    })
   }
 
   /**
-   * @description
-   * @param {*} data
+   * @description send an info message to the logger
+   * @param {string} data
    * @memberof Logger
    */
   info(data) {
-    this.log(data, logLevels.INFO)
-  }
-
-  debug(data) {
-    this.log(data, logLevels.DEBUG)
+    this._log(data, logLevels.INFO)
   }
 
   /**
-   * Just a warning. This may cause issue in the futre
-   * @param {String} logMessage
+   * @description Send a debug message to the logger
+   * @param {string} data
+   * @memberof Logger
+   */
+  debug(data) {
+    this._log(data, logLevels.DEBUG)
+  }
+
+  /**
+   * @description Send a warning to the logger
+   * @param {string} logMessage
+   * @memberof Logger
    */
   warn(logMessage) {
-    this.log(logMessage, logLevels.WARN)
+    this._log(logMessage, logLevels.WARN)
   }
 
   /**
-   * Log your error messages here
-   * @param {String} logMessage
+   * @description Send a error to the logger
+   * @param {string} logMessage
+   * @memberof Logger
    */
   error(logMessage) {
-    this.log(logMessage, logLevels.ERROR)
+    this._log(logMessage, logLevels.ERROR)
+  }
+  /**
+   * @description Send a failure to the logger
+   * @param {string} logMessage
+   * @memberof Logger
+   */
+  error(logMessage) {
+    this._log(logMessage, logLevels.FAILURE)
   }
 
   /**
-   * This log will pretty much always show... Think of it as the voiceover of your program
-   * @param {String} logMessage
+   * @description Send a GODLY message to the logger
+   * @param {string} logMessage
+   * @memberof Logger
    */
   godly(logMessage) {
-    this.log(logMessage, logLevels.GODLY)
+    this._log(logMessage, logLevels.GODLY)
   }
 
   // TODO: Exclude anything other than whats in the loglevel
+  /**
+   * @description Changes the main log level
+   * @param {logLevels} logLevel
+   * @memberof Logger
+   */
   setLogLevel(logLevel) {
-    this.warn(`Log level changed to ${this._getKeyByValue(logLevels, logLevel).toUpperCase()}`)
+    this.warn(`Log level changed to ${boxTools.ListTools.getKeyByValue(logLevels, logLevel).toUpperCase()}`)
     this.logLevel = logLevel
   }
 
@@ -208,6 +211,14 @@ class Logger extends EventEmitter {
     remote = require('electron').remote
   }
 
+  /**
+   * @deprecated Use Boxtoolsjs
+   * @description Returns the key name given a list and vaule
+   * @param {*} object
+   * @param {*} value
+   * @returns String of the
+   * @memberof Logger
+   */
   _getKeyByValue(object, value) {
     return Object.keys(object).find((key) => object[key] === value)
   }
@@ -216,20 +227,20 @@ class Logger extends EventEmitter {
    *
    * @param {string} data
    */
-  _log(data) {
+  _logLocal(data) {
     if (this.selfLog) {
       console.log(data)
     }
   }
 
-  _createUdpClient(ipaddress, port = 2485, bind = false) {
+  _createUdpClient(ipaddress, port = 2485, bind = null) {
     const client = dgram.createSocket('udp4')
+    // Lets the application close if this is the only socket still open
     client.unref()
 
     if (bind) {
       client.bind(port)
     }
-
     return client
   }
 }
@@ -259,4 +270,5 @@ if (typeof require != 'undefined' && require.main == module) {
   })
 
   bat.info('Testing')
+  // bat.setLogLevel(logLevels.)
 }
