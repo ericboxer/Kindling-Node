@@ -44,8 +44,8 @@ myLog.info("Hello World!")
   * {name, type, logLevel}
   * This logs out to your local console, or the JS console in your browser (if you like that sort of thing).
 * **File**
-  * {name, type, logLevel, filePath, fileName}
-  * This logs out to a file. No fanciness here. I don't currently recommend this for anything other than debugging. If A file path or file name is not set it will output to the local directory as 'log.txt'
+  * {name, type, logLevel, filePath, fileName, rotating [hourly, daily, weekly, monthly, yearly]}
+  * This logs out to a file. No fanciness here. If A file path or file name is not set it will output to the local directory as 'log.txt'
 * **UDP**
   * {name, type, logLevel, ipAddress, port}
   * This will output a UDP message to anywhere you like. It's up to you what to do with it from there.
@@ -59,7 +59,6 @@ myLog.info("Hello World!")
 ## TODOs
 * [ ] It's terribly documented. I need to clean all of that up.
 * [ ] Fix the custom endpoint
-* [ ] Add multicast handling to UDP logger
 * [ ] Add rotation options to FILE logger - this may be better suited as a new type
 * [ ] Possibly add a websocket logger?
 * [ ] Add a custom output type

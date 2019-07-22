@@ -26,6 +26,20 @@ var logLevels = {
 }
 
 /**
+ * @description An ENUM for different types of rotating files
+ */
+var logRotations = {
+  OFF: 0,
+  HOURLY: 1,
+  DAILY: 2,
+  WEEKLY: 3,
+  MONTHLY: 4,
+  YEARLY: 5,
+}
+
+var _dayMappings = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+/**
  * @description An ENUM descriptor of the different end points
  * @enum {number}
  */
@@ -43,6 +57,7 @@ class Logger extends EventEmitter {
     // A log stream is where the log info will go (ie console, text file, udp...) it should be open enough to accept pretty much anything
     this.loggers = []
     this.udpClients = {} // A place to store the udp clients
+    this.fileLogs = {} // a place to store different files
     this.logLevel = logLevels.INFO
     this.dateFormat = options.dateFormat || 'yyyy-mm-dd HH:MM:ss.l' // You can find formatting options here https://www.npmjs.com/package/dateformat
     this.isElectron = false
@@ -61,6 +76,14 @@ class Logger extends EventEmitter {
     switch (logStream.type) {
       case logEndpoints.UDP:
         this.udpClients[logStream.name] = this._createUdpClient(logStream.ipAddress, logStream.port || 2485, logStream.udpBind || false)
+        break
+      case logEndpoints.FILE:
+        const date = new Date()
+        logStream.currentHour = dateformat(date, 'HH')
+        logStream.currentDay = dateformat(date, 'dd')
+        logStream.currentWeek = dateformat(date, 'W')
+        logStream.currentMonth = dateformat(date, 'mm')
+        logStream.currentYear = dateformat(date, 'yyyy')
         break
       default:
         break
@@ -112,20 +135,60 @@ class Logger extends EventEmitter {
             break
 
           case logEndpoints.FILE:
+            // console.log(activeLogger)
             // File specifics
-            const fullFilePath = path.join(activeLogger.filePath, activeLogger.fileName) || path.join('./', 'log.txt')
-            const dataWithNewLines = logData + '\r'
+            let fullFilePath
+            let fileName
+            let filePath
+            const now = new Date()
+            switch (activeLogger.rotating) {
+              case logRotations.OFF:
+                break
+              case logRotations.HOURLY:
+                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`, `${dateformat(now, 'mmmm')}`, `${dateformat(now, 'dd')}`)
+                fileName = `${dateformat(now, 'yyyy-mm-dd-HH')}.log`
+                break
+              case logRotations.DAILY:
+                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`, `${dateformat(now, 'mmmm')}`)
+                fileName = `${dateformat(now, 'yyyy-mm-dd ddd')}.log`
+                break
+              case logRotations.WEEKLY:
+                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`)
+                fileName = `${dateformat(now, 'yyyy-W')}.log`
+                break
+              case logRotations.MONTHLY:
+                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`)
+                fileName = `${dateformat(now, 'yyyy-mm')}.log`
+                break
+              case logRotations.YEARLY:
+                filePath = path.join(activeLogger.filePath, 'Years')
+                fileName = `${dateformat(now, 'yyyy')}.log`
+                break
 
-            // NOW we can do all of the logging
-            fs.appendFileSync(fullFilePath, dataWithNewLines)
+              default:
+                // console.log('not created!')
+                fullFilePath = path.join(activeLogger.filePath, activeLogger.fileName) || path.join('./', 'log.txt')
+                break
+            }
+
+            const dataWithNewLines = logData + '\r'
+            fullFilePath = path.join(filePath, fileName)
+
+            try {
+              if (fs.existsSync(fullFilePath)) {
+                fs.appendFileSync(fullFilePath, dataWithNewLines)
+              } else {
+                fs.mkdir(filePath, { recursive: true }, (err) => {
+                  console.log(err)
+                })
+                fs.writeFileSync(fullFilePath, dataWithNewLines, { flag: 'wx' })
+              }
+            } catch (error) {}
             break
 
           case logEndpoints.UDP:
-            // console.log('UDP Bitches!')
-
             const bufferedMessage = Buffer.from(logData)
             this.udpClients[activeLogger.name].send(bufferedMessage, activeLogger.port, activeLogger.ipaddress)
-            // this.udpClients[activeLogger.name].close()
             break
 
           case logEndpoints.CUSTOM:
@@ -243,12 +306,19 @@ class Logger extends EventEmitter {
     }
     return client
   }
+
+  _setupFileParamters(filePath, fileName) {
+    const fullFilePath = path.join(filePath, fileName) || path.join('./', 'log.txt')
+    const dataWithNewLines = logData + '\r'
+    fs.appendFileSync(fullFilePath, dataWithNewLines)
+  }
 }
 
 module.exports = {
   Logger,
   logLevels,
   logEndpoints,
+  logRotations,
 }
 
 // .:: Local moduling... ::.
@@ -269,6 +339,25 @@ if (typeof require != 'undefined' && require.main == module) {
     logLevel: logLevels.UNGODLY,
   })
 
-  bat.info('Testing')
-  // bat.setLogLevel(logLevels.)
+  bat.addEndpoint({
+    name: 'rotating file',
+    type: logEndpoints.FILE,
+    filePath: './testLogs',
+    fileName: 'testlog.log',
+    logLevel: logLevels.INFO,
+    rotating: logRotations.DAILY,
+  })
+
+  bat.addEndpoint({
+    name: 'rotating file',
+    type: logEndpoints.FILE,
+    filePath: './testLogs',
+    fileName: 'testlog.log',
+    logLevel: logLevels.INFO,
+    rotating: logRotations.HOURLY,
+  })
+
+  setInterval(() => {
+    bat.info('Testing')
+  }, 1000)
 }
