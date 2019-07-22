@@ -89,7 +89,7 @@ class Logger extends EventEmitter {
         break
     }
     this.info(
-      `New logger added:: Name: ${logStream.name}, Log Level: ${boxTools.ListTools.getKeyByValue(logLevels, logStream.logLevel || this.logLevel)}, Type: ${boxTools.EnumTools.nameFromEnumValue(
+      `New logger added:: Name: ${logStream.name}, Log Level: ${this._getKeyByValue(logLevels, logStream.logLevel || this.logLevel)}, Type: ${boxTools.EnumTools.nameFromEnumValue(
         logEndpoints,
         logStream.type,
       )}`,
@@ -117,7 +117,7 @@ class Logger extends EventEmitter {
         // Build out the data to log
         const now = new Date()
         const date = dateformat(now, this.dateFormat)
-        const logData = `${date} ${boxTools.ListTools.getKeyByValue(logLevels, Number(logLevel)).toLocaleUpperCase()}:: ${logMessage}`
+        const logData = `${date} ${this._getKeyByValue(logLevels, Number(logLevel)).toLocaleUpperCase()}:: ${logMessage}`
 
         // Logger specifics
 
