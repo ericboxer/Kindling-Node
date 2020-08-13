@@ -242,7 +242,7 @@ class Logger extends EventEmitter {
    * @memberof Logger
    */
   error(logMessage) {
-    this._log(logMessage, logLevels.FAILURE)
+    this._log(logMessage, logLevels.ERROR)
   }
 
   /**
@@ -360,4 +360,8 @@ if (typeof require != 'undefined' && require.main == module) {
   setInterval(() => {
     bat.info('Testing')
   }, 1000)
+
+  setInterval(() => {
+    bat.error('test error')
+  }, 1500)
 }
