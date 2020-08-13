@@ -3,7 +3,7 @@ import dgram from 'dgram'
 import { EventEmitter } from 'events'
 import fs from 'fs'
 import path from 'path'
-import boxTools from 'boxtoolsjs'
+// import boxTools from 'boxtoolsjs'
 
 // .:: In the event of electron ::.
 // Electron will be required when needed... however we need to set some gloabal variables for it to get used correctly.
@@ -11,7 +11,8 @@ var ipcRenderer: any //= require('electron')
 var remote: any // = reuqire('electron')
 
 /**
- * @description Log level
+ * @description
+ * @export
  * @enum {number}
  */
 enum logLevels {
@@ -41,28 +42,21 @@ var _dayMappings = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Fri
 
 interface LogStream {
   logLevel: logLevels
-  channel: string
-  rotating: any
-  // filePath(filePath: any, arg1: string, arg2: string, arg3: string): any
-  // fileName( filePath: any, fileName: any ): any
-  filePath?: string
-  fileName?: string
-  // ipaddress(bufferedMessage: Buffer, port: number | undefined, ipaddress: any)
-  // customFunction(logData: string)
   type: LogEndpoints
   name: string
-
+  channel?: string
+  rotating?: any
+  filePath?: string
+  fileName?: string
   ipAddress?: string
   port?: number
   udpBind?: boolean
-
   currentHour?: string
   currentDay?: string
   currentWeek?: string
   currentMonth?: string
   currentYear?: string
-
-  customFunction(logData: string): string
+  customFunction?(logData: string): string
 }
 
 enum LogEndpoints {
@@ -73,7 +67,7 @@ enum LogEndpoints {
   CUSTOM = 99,
 }
 
-class Logger extends EventEmitter {
+export class Logger extends EventEmitter {
   loggers: LogStream[]
 
   udpClients: any
@@ -84,6 +78,8 @@ class Logger extends EventEmitter {
   isElectron: boolean
   selfLog: boolean
 
+  logData: string = ''
+
   constructor(options = {}) {
     super()
     // A log stream is where the log info will go (ie console, text file, udp...) it should be open enough to accept pretty much anything
@@ -91,7 +87,7 @@ class Logger extends EventEmitter {
     this.udpClients = {} // A place to store the udp clients
     this.fileLogs = {} // a place to store different files
     this.logLevel = logLevels.INFO
-    this.dateFormat = options.dateFormat || 'yyyy-mm-dd HH:MM:ss.l' // You can find formatting options here https://www.npmjs.com/package/dateformat
+    this.dateFormat = 'yyyy-mm-dd HH:MM:ss.l' // You can find formatting options here https://www.npmjs.com/package/dateformat
     this.isElectron = false
     this.selfLog = false
   }
@@ -101,6 +97,12 @@ class Logger extends EventEmitter {
    * @property {Object} logStream
    * @property {string} logStream.name - The name of the log stream
    * @property {logEndpoints} logStream.type  - The type of log stream [console | file]
+   */
+
+  /**
+   * @description Adds a logger end point to the log class
+   * @param {LogStream} logStream
+   * @memberof Logger
    */
   addEndpoint(logStream: LogStream) {
     this.loggers.push(logStream)
@@ -121,10 +123,11 @@ class Logger extends EventEmitter {
         break
     }
     this.info(
-      `New logger added:: Name: ${logStream.name}, Log Level: ${this._getKeyByValue(logLevels, String(logStream.logLevel || this.logLevel))}, Type: ${boxTools.EnumTools.nameFromEnumValue(
-        LogEndpoints,
-        logStream.type,
-      )}`,
+      `New logger added:: Name: ${logStream.name}, Log Level: ${logLevels[logStream.logLevel || this.logLevel]}, Type: ${logLevels[logStream.logLevel || this.logLevel]}`,
+      // `New logger added:: Name: ${logStream.name}, Log Level: ${this._getKeyByValue(logLevels, String(logStream.logLevel || this.logLevel))}, Type: ${boxTools.EnumTools.nameFromEnumValue(
+      // LogEndpoints,
+      // logStream.type,
+      // )}`,
     )
   }
 
@@ -134,7 +137,7 @@ class Logger extends EventEmitter {
    * @param {logLevels} logLevel [logLevels.DEBUG] 
   
    */
-  _log(logMessage: String, logLevel = logLevels.INFO) {
+  private log(logMessage: String, logLevel: logLevels = logLevels.INFO) {
     this.loggers.forEach((logger) => {
       const activeLogger = logger
       const shouldLog = logLevel >= activeLogger.logLevel && logLevel >= this.logLevel
@@ -149,21 +152,22 @@ class Logger extends EventEmitter {
         // Build out the data to log
         const now = new Date()
         const date = dateformat(now, this.dateFormat)
-        const logData = `${date} ${this._getKeyByValue(logLevels, String(logLevel)).toLocaleUpperCase()}:: ${logMessage}`
+        this.logData = `${date} ${logLevels[logLevel]}:: ${logMessage}`
+        // this.logData = `${date} ${this._getKeyByValue(logLevels, String(logLevel)).toLocaleUpperCase()}:: ${logMessage}`
 
         // Logger specifics
 
         // Loop through all of the loggers
         switch (activeLogger.type) {
           case LogEndpoints.CONSOLE:
-            console.log(logData)
+            console.log(this.logData)
             break
           case LogEndpoints.ELECTRON_CONSOLE:
             // We're savvy enough to know we're using Electron, so lets just enable it
             if (!this.isElectron) {
               this.useElectron()
             }
-            ipcRenderer.send(activeLogger.channel || 'log', logData)
+            ipcRenderer.send(activeLogger.channel || 'log', this.logData)
             break
 
           case LogEndpoints.FILE:
@@ -203,14 +207,14 @@ class Logger extends EventEmitter {
                 break
             }
 
-            const dataWithNewLines = logData + '\r'
+            const dataWithNewLines = this.logData + '\r'
             fullFilePath = path.join(filePath!, fileName!)
 
             try {
               if (fs.existsSync(fullFilePath)) {
                 fs.appendFileSync(fullFilePath, dataWithNewLines)
               } else {
-                fs.mkdir(filePath, { recursive: true }, (err) => {
+                fs.mkdir(filePath!, { recursive: true }, (err) => {
                   console.log(err)
                 })
                 fs.writeFileSync(fullFilePath, dataWithNewLines, { flag: 'wx' })
@@ -219,12 +223,12 @@ class Logger extends EventEmitter {
             break
 
           case LogEndpoints.UDP:
-            const bufferedMessage = Buffer.from(logData)
+            const bufferedMessage = Buffer.from(this.logData)
             this.udpClients[activeLogger.name].send(bufferedMessage, activeLogger.port, activeLogger.ipAddress)
             break
 
           case LogEndpoints.CUSTOM:
-            activeLogger.customFunction(logData)
+            activeLogger.customFunction!(this.logData)
             break
           default:
             console.log(Date.now(), 'Unknown type of logger', activeLogger.logLevel)
@@ -239,7 +243,7 @@ class Logger extends EventEmitter {
    * @memberof Logger
    */
   info(logMessage: String) {
-    this._log(logMessage, logLevels.INFO)
+    this.log(logMessage, logLevels.INFO)
   }
 
   /**
@@ -248,7 +252,7 @@ class Logger extends EventEmitter {
    * @memberof Logger
    */
   debug(logMessage: String) {
-    this._log(logMessage, logLevels.DEBUG)
+    this.log(logMessage, logLevels.DEBUG)
   }
 
   /**
@@ -257,7 +261,7 @@ class Logger extends EventEmitter {
    * @memberof Logger
    */
   warn(logMessage: String) {
-    this._log(logMessage, logLevels.WARN)
+    this.log(logMessage, logLevels.WARN)
   }
 
   /**
@@ -266,7 +270,7 @@ class Logger extends EventEmitter {
    * @memberof Logger
    */
   error(logMessage: String) {
-    this._log(logMessage, logLevels.ERROR)
+    this.log(logMessage, logLevels.ERROR)
   }
 
   /**
@@ -275,7 +279,7 @@ class Logger extends EventEmitter {
    * @memberof Logger
    */
   godly(logMessage: String) {
-    this._log(logMessage, logLevels.GODLY)
+    this.log(logMessage, logLevels.GODLY)
   }
 
   // TODO: Exclude anything other than whats in the loglevel
@@ -285,7 +289,8 @@ class Logger extends EventEmitter {
    * @memberof Logger
    */
   setLogLevel(logLevel: logLevels) {
-    this.warn(`Log level changed to ${boxTools.ListTools.getKeyByValue(logLevels, logLevel).toUpperCase()}`)
+    this.warn(`Log level changed to ${String(logLevels[logLevel]).toUpperCase()}`)
+    // this.warn(`Log level changed to ${boxTools.ListTools.getKeyByValue(logLevels, logLevel).toUpperCase()}`)
     this.logLevel = logLevel
   }
 
@@ -306,9 +311,9 @@ class Logger extends EventEmitter {
    * @returns String of the
    * @memberof Logger
    */
-  _getKeyByValue(object: Object, value: string): string {
-    return Object.keys(object).find((key) => object[key] === value)
-  }
+  // _getKeyByValue(object: Object, value: string): string {
+  //   return Object.keys(object).find((key) => object[key] === value)
+  // }
 
   /**
    *
@@ -333,7 +338,7 @@ class Logger extends EventEmitter {
 
   _setupFileParamters(filePath: string, fileName: string) {
     const fullFilePath = path.join(filePath, fileName) || path.join('./', 'log.txt')
-    const dataWithNewLines = logData + '\r'
+    const dataWithNewLines = this.logData + '\r'
     fs.appendFileSync(fullFilePath, dataWithNewLines)
   }
 }
@@ -351,13 +356,13 @@ module.exports = {
 
 //   bat.addEndpoint({
 //     name: 'base',
-//     type: logEndpoints.CONSOLE,
+//     type: LogEndpoints.CONSOLE,
 //     logLevel: logLevels.INFO,
 //   })
 
 //   bat.addEndpoint({
 //     name: 'udp logger',
-//     type: logEndpoints.UDP,
+//     type: LogEndpoints.UDP,
 //     ipAddress: '127.0.0.1',
 //     port: 2485,
 //     logLevel: logLevels.UNGODLY,
@@ -365,7 +370,7 @@ module.exports = {
 
 //   bat.addEndpoint({
 //     name: 'rotating file',
-//     type: logEndpoints.FILE,
+//     type: LogEndpoints.FILE,
 //     filePath: './testLogs',
 //     fileName: 'testlog.log',
 //     logLevel: logLevels.INFO,
@@ -374,7 +379,7 @@ module.exports = {
 
 //   bat.addEndpoint({
 //     name: 'rotating file',
-//     type: logEndpoints.FILE,
+//     type: LogEndpoints.FILE,
 //     filePath: './testLogs',
 //     fileName: 'testlog.log',
 //     logLevel: logLevels.INFO,
