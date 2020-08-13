@@ -1,6 +1,6 @@
 {
   "name": "kindling-logger",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "A lightweight logging utility based on a common API in multiple languages.",
   "main": "./dist/kindling.js",
   "types": "./dist/kindling.d.ts",
