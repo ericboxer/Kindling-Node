@@ -2,7 +2,8 @@
   "name": "kindling-logger",
   "version": "1.4.0",
   "description": "A lightweight logging utility based on a common API in multiple languages.",
-  "main": "kindling.js",
+  "main": "dist/kindling.js",
+  "types": "dist/kindling",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -28,5 +29,10 @@
   "files": [
     "kindling.js"
   ],
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/dateformat": "^3.0.1",
+    "@types/node": "^14.0.27",
+    "@types/typescript": "^2.0.0",
+    "typescript": "^3.9.7"
+  }
 }

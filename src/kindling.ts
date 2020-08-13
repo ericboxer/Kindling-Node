@@ -1,57 +1,89 @@
-const dateformat = require('dateformat')
-const dgram = require('dgram')
-const EventEmitter = require('events')
-const fs = require('fs')
-const path = require('path')
-const boxTools = require('boxtoolsjs')
+import dateformat from 'dateformat'
+import dgram from 'dgram'
+import { EventEmitter } from 'events'
+import fs from 'fs'
+import path from 'path'
+import boxTools from 'boxtoolsjs'
 
 // .:: In the event of electron ::.
 // Electron will be required when needed... however we need to set some gloabal variables for it to get used correctly.
-var ipcRenderer //= require('electron')
-var remote // = reuqire('electron')
+var ipcRenderer: any //= require('electron')
+var remote: any // = reuqire('electron')
 
 /**
- * The preferred set of levels
- * @description An ENUM descriptor of the different log levels
+ * @description Log level
  * @enum {number}
  */
-var logLevels = {
-  UNGODLY: -1000,
-  INFO: 0,
-  DEBUG: 10,
-  WARN: 20,
-  ERROR: 30,
-  FAILURE: 50,
-  GODLY: 1000,
+enum logLevels {
+  UNGODLY = -1000,
+  INFO = 0,
+  DEBUG = 10,
+  WARN = 20,
+  ERROR = 30,
+  FAILURE = 50,
+  GODLY = 1000,
 }
 
 /**
- * @description An ENUM for different types of rotating files
+ * @description How often the log file should be rotated.
+ * @enum {number}
  */
-var logRotations = {
-  OFF: 0,
-  HOURLY: 1,
-  DAILY: 2,
-  WEEKLY: 3,
-  MONTHLY: 4,
-  YEARLY: 5,
+enum logRotations {
+  OFF = 0,
+  HOURLY,
+  DAILY,
+  WEEKLY,
+  MONTHLY,
+  YEARLY,
 }
 
 var _dayMappings = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-/**
- * @description An ENUM descriptor of the different end points
- * @enum {number}
- */
-var logEndpoints = {
-  CONSOLE: 0,
-  FILE: 1,
-  UDP: 2,
-  ELECTRON_CONSOLE: 3,
-  CUSTOM: 99,
+interface LogStream {
+  logLevel: logLevels
+  channel: string
+  rotating: any
+  // filePath(filePath: any, arg1: string, arg2: string, arg3: string): any
+  // fileName( filePath: any, fileName: any ): any
+  filePath?: string
+  fileName?: string
+  // ipaddress(bufferedMessage: Buffer, port: number | undefined, ipaddress: any)
+  // customFunction(logData: string)
+  type: LogEndpoints
+  name: string
+
+  ipAddress?: string
+  port?: number
+  udpBind?: boolean
+
+  currentHour?: string
+  currentDay?: string
+  currentWeek?: string
+  currentMonth?: string
+  currentYear?: string
+
+  customFunction(logData: string): string
+}
+
+enum LogEndpoints {
+  CONSOLE = 0,
+  FILE = 1,
+  UDP = 2,
+  ELECTRON_CONSOLE = 3,
+  CUSTOM = 99,
 }
 
 class Logger extends EventEmitter {
+  loggers: LogStream[]
+
+  udpClients: any
+  fileLogs: any
+
+  logLevel: logLevels
+  dateFormat: string
+  isElectron: boolean
+  selfLog: boolean
+
   constructor(options = {}) {
     super()
     // A log stream is where the log info will go (ie console, text file, udp...) it should be open enough to accept pretty much anything
@@ -70,14 +102,14 @@ class Logger extends EventEmitter {
    * @property {string} logStream.name - The name of the log stream
    * @property {logEndpoints} logStream.type  - The type of log stream [console | file]
    */
-  addEndpoint(logStream) {
+  addEndpoint(logStream: LogStream) {
     this.loggers.push(logStream)
     // TODO: add handling for Network logging here
     switch (logStream.type) {
-      case logEndpoints.UDP:
-        this.udpClients[logStream.name] = this._createUdpClient(logStream.ipAddress, logStream.port || 2485, logStream.udpBind || false)
+      case LogEndpoints.UDP:
+        this.udpClients[logStream.name] = this._createUdpClient(logStream.ipAddress!, logStream.port || 2485, logStream.udpBind || false)
         break
-      case logEndpoints.FILE:
+      case LogEndpoints.FILE:
         const date = new Date()
         logStream.currentHour = dateformat(date, 'HH')
         logStream.currentDay = dateformat(date, 'dd')
@@ -89,8 +121,8 @@ class Logger extends EventEmitter {
         break
     }
     this.info(
-      `New logger added:: Name: ${logStream.name}, Log Level: ${this._getKeyByValue(logLevels, logStream.logLevel || this.logLevel)}, Type: ${boxTools.EnumTools.nameFromEnumValue(
-        logEndpoints,
+      `New logger added:: Name: ${logStream.name}, Log Level: ${this._getKeyByValue(logLevels, String(logStream.logLevel || this.logLevel))}, Type: ${boxTools.EnumTools.nameFromEnumValue(
+        LogEndpoints,
         logStream.type,
       )}`,
     )
@@ -102,31 +134,31 @@ class Logger extends EventEmitter {
    * @param {logLevels} logLevel [logLevels.DEBUG] 
   
    */
-  _log(logMessage, logLevel = logLevels.INFO) {
+  _log(logMessage: String, logLevel = logLevels.INFO) {
     this.loggers.forEach((logger) => {
       const activeLogger = logger
       const shouldLog = logLevel >= activeLogger.logLevel && logLevel >= this.logLevel
 
       // For logging the logger... weird, right?
-      this._logLocal('Active logger:', activeLogger)
-      this._logLocal('Log Level:', this.logLevel)
-      this._logLocal('Local Log Level:', logLevel)
-      this._logLocal('Should log:', shouldLog)
+      this._logLocal(`Active logger: ${activeLogger}`)
+      this._logLocal(`Log Level: ${this.logLevel}`)
+      this._logLocal(`Local Log Level: ${logLevel}`)
+      this._logLocal(`Should log: ${shouldLog}`)
 
       if (shouldLog) {
         // Build out the data to log
         const now = new Date()
         const date = dateformat(now, this.dateFormat)
-        const logData = `${date} ${this._getKeyByValue(logLevels, Number(logLevel)).toLocaleUpperCase()}:: ${logMessage}`
+        const logData = `${date} ${this._getKeyByValue(logLevels, String(logLevel)).toLocaleUpperCase()}:: ${logMessage}`
 
         // Logger specifics
 
         // Loop through all of the loggers
         switch (activeLogger.type) {
-          case logEndpoints.CONSOLE:
+          case LogEndpoints.CONSOLE:
             console.log(logData)
             break
-          case logEndpoints.ELECTRON_CONSOLE:
+          case LogEndpoints.ELECTRON_CONSOLE:
             // We're savvy enough to know we're using Electron, so lets just enable it
             if (!this.isElectron) {
               this.useElectron()
@@ -134,45 +166,45 @@ class Logger extends EventEmitter {
             ipcRenderer.send(activeLogger.channel || 'log', logData)
             break
 
-          case logEndpoints.FILE:
+          case LogEndpoints.FILE:
             // console.log(activeLogger)
             // File specifics
             let fullFilePath
-            let fileName
-            let filePath
+            let fileName: string
+            let filePath: string
             const now = new Date()
             switch (activeLogger.rotating) {
               case logRotations.OFF:
                 break
               case logRotations.HOURLY:
-                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`, `${dateformat(now, 'mmmm')}`, `${dateformat(now, 'dd')}`)
+                filePath = path.join(activeLogger.filePath!, `${dateformat(now, 'yyyy')}`, `${dateformat(now, 'mmmm')}`, `${dateformat(now, 'dd')}`)
                 fileName = `${dateformat(now, 'yyyy-mm-dd-HH')}.log`
                 break
               case logRotations.DAILY:
-                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`, `${dateformat(now, 'mmmm')}`)
+                filePath = path.join(activeLogger.filePath!, `${dateformat(now, 'yyyy')}`, `${dateformat(now, 'mmmm')}`)
                 fileName = `${dateformat(now, 'yyyy-mm-dd ddd')}.log`
                 break
               case logRotations.WEEKLY:
-                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`)
+                filePath = path.join(activeLogger.filePath!, `${dateformat(now, 'yyyy')}`)
                 fileName = `${dateformat(now, 'yyyy-W')}.log`
                 break
               case logRotations.MONTHLY:
-                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`)
+                filePath = path.join(activeLogger.filePath!, `${dateformat(now, 'yyyy')}`)
                 fileName = `${dateformat(now, 'yyyy-mm')}.log`
                 break
               case logRotations.YEARLY:
-                filePath = path.join(activeLogger.filePath, 'Years')
+                filePath = path.join(activeLogger.filePath!, 'Years')
                 fileName = `${dateformat(now, 'yyyy')}.log`
                 break
 
               default:
                 // console.log('not created!')
-                fullFilePath = path.join(activeLogger.filePath, activeLogger.fileName) || path.join('./', 'log.txt')
+                fullFilePath = path.join(activeLogger.filePath!, activeLogger.fileName!) || path.join('./', 'log.txt')
                 break
             }
 
             const dataWithNewLines = logData + '\r'
-            fullFilePath = path.join(filePath, fileName)
+            fullFilePath = path.join(filePath!, fileName!)
 
             try {
               if (fs.existsSync(fullFilePath)) {
@@ -186,12 +218,12 @@ class Logger extends EventEmitter {
             } catch (error) {}
             break
 
-          case logEndpoints.UDP:
+          case LogEndpoints.UDP:
             const bufferedMessage = Buffer.from(logData)
-            this.udpClients[activeLogger.name].send(bufferedMessage, activeLogger.port, activeLogger.ipaddress)
+            this.udpClients[activeLogger.name].send(bufferedMessage, activeLogger.port, activeLogger.ipAddress)
             break
 
-          case logEndpoints.CUSTOM:
+          case LogEndpoints.CUSTOM:
             activeLogger.customFunction(logData)
             break
           default:
@@ -203,20 +235,20 @@ class Logger extends EventEmitter {
 
   /**
    * @description send an info message to the logger
-   * @param {string} data
+   * @param {string} logMessage
    * @memberof Logger
    */
-  info(data) {
-    this._log(data, logLevels.INFO)
+  info(logMessage: String) {
+    this._log(logMessage, logLevels.INFO)
   }
 
   /**
    * @description Send a debug message to the logger
-   * @param {string} data
+   * @param {string} logMessage
    * @memberof Logger
    */
-  debug(data) {
-    this._log(data, logLevels.DEBUG)
+  debug(logMessage: String) {
+    this._log(logMessage, logLevels.DEBUG)
   }
 
   /**
@@ -224,7 +256,7 @@ class Logger extends EventEmitter {
    * @param {string} logMessage
    * @memberof Logger
    */
-  warn(logMessage) {
+  warn(logMessage: String) {
     this._log(logMessage, logLevels.WARN)
   }
 
@@ -233,15 +265,7 @@ class Logger extends EventEmitter {
    * @param {string} logMessage
    * @memberof Logger
    */
-  error(logMessage) {
-    this._log(logMessage, logLevels.ERROR)
-  }
-  /**
-   * @description Send a failure to the logger
-   * @param {string} logMessage
-   * @memberof Logger
-   */
-  error(logMessage) {
+  error(logMessage: String) {
     this._log(logMessage, logLevels.ERROR)
   }
 
@@ -250,7 +274,7 @@ class Logger extends EventEmitter {
    * @param {string} logMessage
    * @memberof Logger
    */
-  godly(logMessage) {
+  godly(logMessage: String) {
     this._log(logMessage, logLevels.GODLY)
   }
 
@@ -260,7 +284,7 @@ class Logger extends EventEmitter {
    * @param {logLevels} logLevel
    * @memberof Logger
    */
-  setLogLevel(logLevel) {
+  setLogLevel(logLevel: logLevels) {
     this.warn(`Log level changed to ${boxTools.ListTools.getKeyByValue(logLevels, logLevel).toUpperCase()}`)
     this.logLevel = logLevel
   }
@@ -282,7 +306,7 @@ class Logger extends EventEmitter {
    * @returns String of the
    * @memberof Logger
    */
-  _getKeyByValue(object, value) {
+  _getKeyByValue(object: Object, value: string): string {
     return Object.keys(object).find((key) => object[key] === value)
   }
 
@@ -290,13 +314,13 @@ class Logger extends EventEmitter {
    *
    * @param {string} data
    */
-  _logLocal(data) {
+  _logLocal(data: string) {
     if (this.selfLog) {
       console.log(data)
     }
   }
 
-  _createUdpClient(ipaddress, port = 2485, bind = null) {
+  _createUdpClient(ipaddress: string, port: number = 2485, bind: boolean = false) {
     const client = dgram.createSocket('udp4')
     // Lets the application close if this is the only socket still open
     client.unref()
@@ -307,7 +331,7 @@ class Logger extends EventEmitter {
     return client
   }
 
-  _setupFileParamters(filePath, fileName) {
+  _setupFileParamters(filePath: string, fileName: string) {
     const fullFilePath = path.join(filePath, fileName) || path.join('./', 'log.txt')
     const dataWithNewLines = logData + '\r'
     fs.appendFileSync(fullFilePath, dataWithNewLines)
@@ -317,51 +341,51 @@ class Logger extends EventEmitter {
 module.exports = {
   Logger,
   logLevels,
-  logEndpoints,
+  LogEndpoints,
   logRotations,
 }
 
-// .:: Local moduling... ::.
-if (typeof require != 'undefined' && require.main == module) {
-  const bat = new Logger()
+// // .:: Local moduling... ::.
+// if (typeof require != 'undefined' && require.main == module) {
+//   const bat = new Logger()
 
-  bat.addEndpoint({
-    name: 'base',
-    type: logEndpoints.CONSOLE,
-    logLevel: logLevels.INFO,
-  })
+//   bat.addEndpoint({
+//     name: 'base',
+//     type: logEndpoints.CONSOLE,
+//     logLevel: logLevels.INFO,
+//   })
 
-  bat.addEndpoint({
-    name: 'udp logger',
-    type: logEndpoints.UDP,
-    ipAddress: '127.0.0.1',
-    port: 2485,
-    logLevel: logLevels.UNGODLY,
-  })
+//   bat.addEndpoint({
+//     name: 'udp logger',
+//     type: logEndpoints.UDP,
+//     ipAddress: '127.0.0.1',
+//     port: 2485,
+//     logLevel: logLevels.UNGODLY,
+//   })
 
-  bat.addEndpoint({
-    name: 'rotating file',
-    type: logEndpoints.FILE,
-    filePath: './testLogs',
-    fileName: 'testlog.log',
-    logLevel: logLevels.INFO,
-    rotating: logRotations.DAILY,
-  })
+//   bat.addEndpoint({
+//     name: 'rotating file',
+//     type: logEndpoints.FILE,
+//     filePath: './testLogs',
+//     fileName: 'testlog.log',
+//     logLevel: logLevels.INFO,
+//     rotating: logRotations.DAILY,
+//   })
 
-  bat.addEndpoint({
-    name: 'rotating file',
-    type: logEndpoints.FILE,
-    filePath: './testLogs',
-    fileName: 'testlog.log',
-    logLevel: logLevels.INFO,
-    rotating: logRotations.HOURLY,
-  })
+//   bat.addEndpoint({
+//     name: 'rotating file',
+//     type: logEndpoints.FILE,
+//     filePath: './testLogs',
+//     fileName: 'testlog.log',
+//     logLevel: logLevels.INFO,
+//     rotating: logRotations.HOURLY,
+//   })
 
-  setInterval(() => {
-    bat.info('Testing')
-  }, 1000)
+//   setInterval(() => {
+//     bat.info('Testing')
+//   }, 1000)
 
-  setInterval(() => {
-    bat.error('test error')
-  }, 1500)
-}
+//   setInterval(() => {
+//     bat.error('test error')
+//   }, 1500)
+// }
