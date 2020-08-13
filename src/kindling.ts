@@ -215,7 +215,7 @@ export class Logger extends EventEmitter {
               if (fs.existsSync(fullFilePath)) {
                 fs.appendFileSync(fullFilePath, dataWithNewLines)
               } else {
-                fs.mkdir(filePath!, { recursive: true }, (err) => {
+                fs.mkdir(filePath!, { recursive: true }, (err: any) => {
                   console.log(err)
                 })
                 fs.writeFileSync(fullFilePath, dataWithNewLines, { flag: 'wx' })

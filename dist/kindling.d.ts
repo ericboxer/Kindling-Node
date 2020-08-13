@@ -125,3 +125,4 @@ export declare class Logger extends EventEmitter {
     _setupFileParamters(filePath: string, fileName: string): void;
 }
 export {};
+//# sourceMappingURL=kindling.d.ts.map
