@@ -1,14 +1,11 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Logger = void 0;
-const dateformat_1 = __importDefault(require("dateformat"));
-const dgram_1 = __importDefault(require("dgram"));
-const events_1 = require("events");
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
+const dateformat = require('dateformat');
+const dgram = require('dgram');
+const EventEmitter = require('events');
+const fs = require('fs');
+const path = require('path');
 // import boxTools from 'boxtoolsjs'
 // .:: In the event of electron ::.
 // Electron will be required when needed... however we need to set some gloabal variables for it to get used correctly.
@@ -51,7 +48,7 @@ var LogEndpoints;
     LogEndpoints[LogEndpoints["ELECTRON_CONSOLE"] = 3] = "ELECTRON_CONSOLE";
     LogEndpoints[LogEndpoints["CUSTOM"] = 99] = "CUSTOM";
 })(LogEndpoints || (LogEndpoints = {}));
-class Logger extends events_1.EventEmitter {
+class Logger extends EventEmitter {
     constructor(options = {}) {
         super();
         this.logData = '';
@@ -85,11 +82,11 @@ class Logger extends events_1.EventEmitter {
                 break;
             case LogEndpoints.FILE:
                 const date = new Date();
-                logStream.currentHour = dateformat_1.default(date, 'HH');
-                logStream.currentDay = dateformat_1.default(date, 'dd');
-                logStream.currentWeek = dateformat_1.default(date, 'W');
-                logStream.currentMonth = dateformat_1.default(date, 'mm');
-                logStream.currentYear = dateformat_1.default(date, 'yyyy');
+                logStream.currentHour = dateformat(date, 'HH');
+                logStream.currentDay = dateformat(date, 'dd');
+                logStream.currentWeek = dateformat(date, 'W');
+                logStream.currentMonth = dateformat(date, 'mm');
+                logStream.currentYear = dateformat(date, 'yyyy');
                 break;
             default:
                 break;
@@ -114,7 +111,7 @@ class Logger extends events_1.EventEmitter {
             if (shouldLog) {
                 // Build out the data to log
                 const now = new Date();
-                const date = dateformat_1.default(now, this.dateFormat);
+                const date = dateformat(now, this.dateFormat);
                 this.logData = `${date} ${logLevels[logLevel]}:: ${logMessage}`;
                 // this.logData = `${date} ${this._getKeyByValue(logLevels, String(logLevel)).toLocaleUpperCase()}:: ${logMessage}`
                 // Logger specifics
@@ -141,41 +138,41 @@ class Logger extends events_1.EventEmitter {
                             case logRotations.OFF:
                                 break;
                             case logRotations.HOURLY:
-                                filePath = path_1.default.join(activeLogger.filePath, `${dateformat_1.default(now, 'yyyy')}`, `${dateformat_1.default(now, 'mmmm')}`, `${dateformat_1.default(now, 'dd')}`);
-                                fileName = `${dateformat_1.default(now, 'yyyy-mm-dd-HH')}.log`;
+                                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`, `${dateformat(now, 'mmmm')}`, `${dateformat(now, 'dd')}`);
+                                fileName = `${dateformat(now, 'yyyy-mm-dd-HH')}.log`;
                                 break;
                             case logRotations.DAILY:
-                                filePath = path_1.default.join(activeLogger.filePath, `${dateformat_1.default(now, 'yyyy')}`, `${dateformat_1.default(now, 'mmmm')}`);
-                                fileName = `${dateformat_1.default(now, 'yyyy-mm-dd ddd')}.log`;
+                                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`, `${dateformat(now, 'mmmm')}`);
+                                fileName = `${dateformat(now, 'yyyy-mm-dd ddd')}.log`;
                                 break;
                             case logRotations.WEEKLY:
-                                filePath = path_1.default.join(activeLogger.filePath, `${dateformat_1.default(now, 'yyyy')}`);
-                                fileName = `${dateformat_1.default(now, 'yyyy-W')}.log`;
+                                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`);
+                                fileName = `${dateformat(now, 'yyyy-W')}.log`;
                                 break;
                             case logRotations.MONTHLY:
-                                filePath = path_1.default.join(activeLogger.filePath, `${dateformat_1.default(now, 'yyyy')}`);
-                                fileName = `${dateformat_1.default(now, 'yyyy-mm')}.log`;
+                                filePath = path.join(activeLogger.filePath, `${dateformat(now, 'yyyy')}`);
+                                fileName = `${dateformat(now, 'yyyy-mm')}.log`;
                                 break;
                             case logRotations.YEARLY:
-                                filePath = path_1.default.join(activeLogger.filePath, 'Years');
-                                fileName = `${dateformat_1.default(now, 'yyyy')}.log`;
+                                filePath = path.join(activeLogger.filePath, 'Years');
+                                fileName = `${dateformat(now, 'yyyy')}.log`;
                                 break;
                             default:
                                 // console.log('not created!')
-                                fullFilePath = path_1.default.join(activeLogger.filePath, activeLogger.fileName) || path_1.default.join('./', 'log.txt');
+                                fullFilePath = path.join(activeLogger.filePath, activeLogger.fileName) || path.join('./', 'log.txt');
                                 break;
                         }
                         const dataWithNewLines = this.logData + '\r';
-                        fullFilePath = path_1.default.join(filePath, fileName);
+                        fullFilePath = path.join(filePath, fileName);
                         try {
-                            if (fs_1.default.existsSync(fullFilePath)) {
-                                fs_1.default.appendFileSync(fullFilePath, dataWithNewLines);
+                            if (fs.existsSync(fullFilePath)) {
+                                fs.appendFileSync(fullFilePath, dataWithNewLines);
                             }
                             else {
-                                fs_1.default.mkdir(filePath, { recursive: true }, (err) => {
+                                fs.mkdir(filePath, { recursive: true }, (err) => {
                                     console.log(err);
                                 });
-                                fs_1.default.writeFileSync(fullFilePath, dataWithNewLines, { flag: 'wx' });
+                                fs.writeFileSync(fullFilePath, dataWithNewLines, { flag: 'wx' });
                             }
                         }
                         catch (error) { }
@@ -273,7 +270,7 @@ class Logger extends events_1.EventEmitter {
         }
     }
     _createUdpClient(ipaddress, port = 2485, bind = false) {
-        const client = dgram_1.default.createSocket('udp4');
+        const client = dgram.createSocket('udp4');
         // Lets the application close if this is the only socket still open
         client.unref();
         if (bind) {
@@ -282,9 +279,9 @@ class Logger extends events_1.EventEmitter {
         return client;
     }
     _setupFileParamters(filePath, fileName) {
-        const fullFilePath = path_1.default.join(filePath, fileName) || path_1.default.join('./', 'log.txt');
+        const fullFilePath = path.join(filePath, fileName) || path.join('./', 'log.txt');
         const dataWithNewLines = this.logData + '\r';
-        fs_1.default.appendFileSync(fullFilePath, dataWithNewLines);
+        fs.appendFileSync(fullFilePath, dataWithNewLines);
     }
 }
 exports.Logger = Logger;
@@ -332,3 +329,4 @@ module.exports = {
 //     bat.error('test error')
 //   }, 1500)
 // }
+//# sourceMappingURL=kindling.js.map

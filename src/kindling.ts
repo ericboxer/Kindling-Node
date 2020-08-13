@@ -1,8 +1,9 @@
-import dateformat from 'dateformat'
-import dgram from 'dgram'
-import { EventEmitter } from 'events'
-import fs from 'fs'
-import path from 'path'
+const dateformat = require('dateformat')
+const dgram = require('dgram')
+const EventEmitter = require('events')
+const fs = require('fs')
+const path = require('path')
+
 // import boxTools from 'boxtoolsjs'
 
 // .:: In the event of electron ::.

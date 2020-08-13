@@ -1,6 +1,4 @@
-/// <reference types="node" />
-import dgram from 'dgram';
-import { EventEmitter } from 'events';
+declare const EventEmitter: any;
 /**
  * @description
  * @export
@@ -123,8 +121,7 @@ export declare class Logger extends EventEmitter {
      * @param {string} data
      */
     _logLocal(data: string): void;
-    _createUdpClient(ipaddress: string, port?: number, bind?: boolean): dgram.Socket;
+    _createUdpClient(ipaddress: string, port?: number, bind?: boolean): any;
     _setupFileParamters(filePath: string, fileName: string): void;
 }
 export {};
-//# sourceMappingURL=kindling.d.ts.map
