@@ -1,9 +1,9 @@
 {
   "name": "kindling-logger",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "A lightweight logging utility based on a common API in multiple languages.",
-  "main": "./dist/kindling.js",
-  "types": "./dist/kindling.d.ts",
+  "main": "dist/kindling.js",
+  "types": "dist/kindling.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
