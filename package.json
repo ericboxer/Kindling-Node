@@ -1,6 +1,6 @@
 {
   "name": "kindling-logger",
-  "version": "1.5.5",
+  "version": "1.5.6",
   "description": "A lightweight logging utility based on a common API in multiple languages.",
   "main": "dist/kindling.js",
   "types": "dist/kindling.d.ts",
@@ -18,17 +18,6 @@
   ],
   "author": "Eric Boxer",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/ericboxer/Kindling-Node/issues"
-  },
-  "homepage": "https://github.com/ericboxer/Kindling-Node#readme",
-  "dependencies": {
-    "boxtoolsjs": "0.0.2",
-    "dateformat": "^3.0.3"
-  },
-  "files": [
-    "kindling.js"
-  ],
   "devDependencies": {
     "@types/dateformat": "^3.0.1",
     "@types/node": "^14.0.27",
