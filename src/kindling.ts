@@ -4,8 +4,6 @@ const EventEmitter = require('events')
 const fs = require('fs')
 const path = require('path')
 
-// import boxTools from 'boxtoolsjs'
-
 // .:: In the event of electron ::.
 // Electron will be required when needed... however we need to set some gloabal variables for it to get used correctly.
 var ipcRenderer: any //= require('electron')
@@ -16,7 +14,7 @@ var remote: any // = reuqire('electron')
  * @export
  * @enum {number}
  */
-enum logLevels {
+export enum logLevels {
   UNGODLY = -1000,
   INFO = 0,
   DEBUG = 10,
@@ -30,7 +28,7 @@ enum logLevels {
  * @description How often the log file should be rotated.
  * @enum {number}
  */
-enum logRotations {
+export enum logRotations {
   OFF = 0,
   HOURLY,
   DAILY,
@@ -41,7 +39,7 @@ enum logRotations {
 
 var _dayMappings = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-interface LogStream {
+export interface LogStream {
   logLevel: logLevels
   type: LogEndpoints
   name: string
@@ -60,7 +58,7 @@ interface LogStream {
   customFunction?(logData: string): string
 }
 
-enum LogEndpoints {
+export enum LogEndpoints {
   CONSOLE = 0,
   FILE = 1,
   UDP = 2,
