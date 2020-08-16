@@ -19,11 +19,6 @@
   dependencies:
     typescript "*"
 
-boxtoolsjs@0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/boxtoolsjs/-/boxtoolsjs-0.0.2.tgz#c5de32a88f5b7262c538fe249caa8632d0c26569"
-  integrity sha512-pe/rWJwFmT5rBR7rj0oio98cyVuk4ItLvBF/N+gfy7PCqxBVQBpA36JFGbYl55LzkAmgD2CJBZaqC7JHJgF2sQ==
-
 dateformat@^3.0.3:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/dateformat/-/dateformat-3.0.3.tgz#a6e37499a4d9a9cf85ef5872044d62901c9889ae"
