@@ -1,12 +1,17 @@
 {
   "name": "kindling-logger",
   "version": "1.5.8",
-  "description": "A lightweight logging utility based on a common API in multiple languages.",
+  "description": "A lightweight logging utility based on a common API for multiple languages.",
   "main": "dist/kindling.js",
   "types": "dist/kindling.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prebuild": "rm -rf ./dist",
+    "build": "tsc"
   },
+  "files": [
+    "kindling.js",
+    "kindling.d.ts"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/ericboxer/Kindling-Node.git"
